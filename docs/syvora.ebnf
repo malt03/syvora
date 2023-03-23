@@ -1,0 +1,102 @@
+(* Syvora EBNF Grammar *)
+
+program = { import_statement }, { ( structure_declaration | function_declaration ) }, { export_statement };
+
+import_statement = "import", string_literal, [ import_with | module_alias ], req_newline;
+import_with = "with", "{", opt_newline, import_list, opt_newline, "}";
+import_list = imported_entity, { ",", opt_newline, imported_entity }, [ ",", opt_newline ];
+imported_entity = type_expression, [ "as", type_expression ];
+module_alias = "as", type_expression;
+
+structure_declaration = "struct", type_expression, [ type_parameter_list ], [ interface_conformance ], "{", opt_newline, [ member_list, opt_newline ], "}", req_newline;
+interface_conformance = ":", accessible_type_expression, { ",", accessible_type_expression }
+member_list = member_declaration, { req_newline, member_declaration };
+member_declaration = field_declaration | method_declaration | init_declaration;
+field_declaration = [ "pub" ], [ "static" ], value_declaration;
+method_declaration = [ "pub" ], [ "static" ], [ "mut" ], function_declaration;
+init_declaration = [ "pub" ], "init", function_after_identifier;
+
+function_declaration = "fn", identifier, function_after_identifier, req_newline;
+function_after_identifier = [ type_parameter_list ], "(", [ opt_newline, argument_list, opt_newline ], ")", [ "->", accessible_type_expression ], block;
+argument_list = argument { ",", opt_newline, argument }, [ ",", opt_newline ];
+argument = identifier, ":", accessible_type_expression;
+
+export_statement = "export", "{", opt_newline, export_list, opt_newline, "}", req_newline;
+export_list = exported_entity, { ",", opt_newline, exported_entity }, [ ",", opt_newline ];
+exported_entity = identifier | type_expression;
+
+type_parameter_list = "[", opt_newline, type_parameter { ",", opt_newline, type_parameter }, [ ",", opt_newline ], opt_newline, "]";
+type_parameter = identifier, [ ":", accessible_type_expression ];
+
+block = [ "throws", accessible_type_expression ], [ "async" ], "{", opt_newline, [ statement_list, opt_newline ], [ return_statement, opt_newline ], "}";
+statement_list = statement, { req_newline, statement }
+return_statement = "return", [ expression ];
+
+statement = value_declaration | assignment_statement | expression_statement ;
+
+value_declaration = ("const" | "var"), identifier, ( value_with_type | assignment ), req_newline;
+value_with_type = ":", accessible_type_expression, [ assignment ]; 
+
+assignment_statement = identifier, assignment;
+
+assignment = "=", expression; 
+
+expression_statement = expression;
+
+expression = or_expression;
+or_expression = and_expression, { "||", opt_newline, and_expression };
+and_expression = equality_expression, { "&&", opt_newline, equality_expression };
+equality_expression = relational_expression, { ("==" | "!="), opt_newline, relational_expression };
+relational_expression = range_expression, { ("<" | "<=" | ">" | ">="), opt_newline, range_expression };
+range_expression = additive_expression, { ("..." | "..<"), opt_newline, additive_expression };
+additive_expression = multiplicative_expression, { ("+" | "-"), opt_newline, multiplicative_expression };
+multiplicative_expression = unary_expression, { ("*" | "/" | "%"), opt_newline, unary_expression };
+unary_expression = [ "!" ], primary_expression;
+
+primary_expression = identifier
+    | literal
+    | "(", expression, ")"
+    | member_access_expression
+    | function_call_expression
+    | if_expression
+    | block;
+
+if_expression = "if", expression, block, [ "else", ( if_expression | block ) ];
+
+member_access_expression = expression, ".", ( identifier | function_call_expression );
+
+function_call_expression = function_call_opening, "/>", req_newline
+    | function_call_opening, ">", opt_newline, [ children, opt_newline ], "</", identifier, ">", req_newline;
+function_call_opening = "<", identifier, [ type_parameter_list ], opt_newline, [ arguments_list, opt_newline ];
+arguments_list = attribute, { opt_newline, attribute };
+attribute = identifier, "=", attribute_value;
+attribute_value = string_literal | "{", expression, "}";
+children = child, { opt_newline, child };
+child = unwrapped_expression | wrapped_expression;
+unwrapped_expression = string_literal_without_quotes | function_call_expression;
+wrapped_expression = "{", expression, "}";
+string_literal_without_quotes = (* any sequence of characters not including `<` or `>` *);
+
+accessible_type_expression = type_expression, { ".", accessible_type_expression };
+
+type_expression = upper_letter, { letter | digit };
+identifier = lower_letter, { letter | digit };
+
+literal = integer_literal
+        | float_literal
+        | string_literal
+        | boolean_literal;
+
+integer_literal = digit, { digit };
+float_literal = integer_literal, ".", integer_literal;
+string_literal = '"', { character }, '"';
+boolean_literal = "true" | "false";
+
+upper_letter = "A" | "B" | "C" | ... | "Z";
+lower_letter = "a" | "b" | "c" | ... | "z";
+letter = upper_letter | lower_letter
+digit = "0" | "1" | "2" | ... | "9";
+character = (* any printable ASCII character except double quote *);
+
+req_newline = "\n", opt_newline;
+opt_newline = { "\n" };
