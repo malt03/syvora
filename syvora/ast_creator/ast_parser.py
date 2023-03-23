@@ -32,6 +32,48 @@ class Parser:
         # Implement structure_declaration rule
         pass
 
+    def function_call_expression(self) -> FunctionCallExpression:
+        self.expect(TokenType.SYMBOL, "<")
+        function_name = self.expect(TokenType.IDENTIFIER).value
+
+        arguments: dict[str, ASTNode] = {}
+        while not self.match(TokenType.SYMBOL, "/>") and not self.match(TokenType.SYMBOL, ">"):
+            arg_name = self.expect(TokenType.IDENTIFIER).value
+            self.expect(TokenType.OPERATOR, "=")
+
+            # if self.match(TokenType.STRING_LITERAL):
+            #     arg_value = self.parse_string_literal()
+            # else:
+            self.expect(TokenType.SYMBOL, "{")
+            self.skip_newlines()
+            arg_value = self.expression()
+            self.skip_newlines()
+            self.expect(TokenType.SYMBOL, "}")
+
+            arguments[arg_name] = arg_value
+
+        children = None
+        if self.match(TokenType.SYMBOL, "/>"):
+            self.next()
+        else:
+            self.expect(TokenType.SYMBOL, ">")
+            self.skip_newlines()
+            children: list[ASTNode] = []
+
+            while not self.match(TokenType.SYMBOL, "</"):
+                # if self.match(TokenType.STRING_LITERAL):
+                #     child = self.parse_string_literal()
+                # else:
+                child = self.function_call_expression()
+                children.append(child)
+                self.skip_newlines()
+
+            self.expect(TokenType.SYMBOL, "</")
+            self.expect(TokenType.IDENTIFIER, function_name)
+            self.expect(TokenType.SYMBOL, ">")
+
+        return FunctionCallExpression(function_name, arguments, children)
+
     def function_declaration(self) -> FunctionDeclaration:
         self.expect(TokenType.KEYWORD, 'fn')
         name = self.expect(TokenType.IDENTIFIER)
@@ -164,6 +206,8 @@ class Parser:
             name = self.current_token.value
             self.next()
             return IdentifierExpression(name)
+        elif self.match(TokenType.SYMBOL, "<"):
+            return self.function_call_expression()
         elif self.current_token.type in [TokenType.INTEGER_LITERAL, TokenType.FLOAT_LITERAL, TokenType.BOOLEAN_LITERAL]:
             literal_type = self.current_token.type
             if literal_type == TokenType.INTEGER_LITERAL:

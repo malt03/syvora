@@ -11,27 +11,28 @@ class LLVMIRGenerator:
         self.module = ir.Module(name="syvora_module")
         self.symbol_table = SymbolTable()
 
-    # def add_print_function(self, node):
-    #     printf_type = ir.FunctionType(ir.IntType(
-    #         32), [ir.PointerType(ir.IntType(8))], var_arg=True)
-    #     printf = ir.Function(self.module, printf_type, name="printf")
+    def add_print_function(self):
+        printf_type = ir.FunctionType(ir.IntType(
+            32), [ir.PointerType(ir.IntType(8))], var_arg=True)
+        printf = ir.Function(self.module, printf_type, 'printf')
 
-    #     fmt_str = ir.Constant(ir.ArrayType(
-    #         ir.IntType(8), 4), bytearray("%d\n\00", "utf8"))
-    #     fmt_str_ptr = self.builder.alloca(fmt_str.type)
-    #     self.builder.store(fmt_str, fmt_str_ptr)
-    #     self.builder.call(printf, [self.builder.bitcast(
-    #         fmt_str_ptr, ir.PointerType(ir.IntType(8))), self.visit(node)])
+        print_function_type = ir.FunctionType(ir.VoidType(), [ir.IntType(64)])
+        print_function = ir.Function(self.module, print_function_type, 'print')
 
-    #     ret_type = ir.VoidType()
-    #     arg_types = [ir.IntType(64)]
-    #     func_type = ir.FunctionType(ret_type, arg_types)
-    #     llvm_function = ir.Function(self.module, func_type, "print")
+        block = print_function.append_basic_block('entry')
+        builder = ir.IRBuilder(block)
 
-    #     entry_block = llvm_function.append_basic_block('entry')
-    #     self.builder = ir.IRBuilder(entry_block)
+        format_string = builder.global_const(
+            ir.ArrayType(ir.IntType(8), 4), b"%ld\n\00")
+        format_string_ptr = builder.gep(format_string, [ir.Constant(
+            ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
 
-    #     return llvm_function
+        integer_value = print_function.args[0]
+        builder.call(printf, [format_string_ptr, integer_value])
+
+        builder.ret_void()
+
+        self.symbol_table.insert("print", print_function)
 
     def visit(self, node):
         method_name = f"visit_{node.__class__.__name__}"
@@ -74,14 +75,12 @@ class LLVMIRGenerator:
         return llvm_function
 
     def visit_Block(self, node: Block) -> None:
-        # Enter a new scope for the block
+
         self.symbol_table.enter_scope()
 
-        # Visit each statement in the block
         for statement in node.statements:
             self.visit(statement)
 
-        # Exit the scope after visiting all statements in the block
         self.symbol_table.exit_scope()
 
     def visit_BinaryExpression(self, node: BinaryExpression):

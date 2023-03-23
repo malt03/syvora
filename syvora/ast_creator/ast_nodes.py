@@ -28,7 +28,7 @@ class IfExpression(ASTNode):
 
 
 class FunctionCallExpression(ASTNode):
-    def __init__(self, function_name, arguments, children=None):
+    def __init__(self, function_name: str, arguments: dict[str, ASTNode], children: Optional[list[ASTNode]] = None):
         self.function_name = function_name
         self.arguments = arguments
         self.children = children

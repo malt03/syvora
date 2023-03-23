@@ -70,7 +70,7 @@ function_call_expression = function_call_opening, "/>", req_newline
 function_call_opening = "<", identifier, [ type_parameter_list ], opt_newline, [ arguments_list, opt_newline ];
 arguments_list = attribute, { opt_newline, attribute };
 attribute = identifier, "=", attribute_value;
-attribute_value = string_literal | "{", expression, "}";
+attribute_value = string_literal | "{", opt_newline, expression, opt_newline, "}";
 children = child, { opt_newline, child };
 child = unwrapped_expression | wrapped_expression;
 unwrapped_expression = string_literal_without_quotes | function_call_expression;

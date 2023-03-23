@@ -1,5 +1,5 @@
 from .lexer import tokenize
-from .parser import Parser
+from .ast_parser import Parser
 
 
 def createAst(source_code: str, file_path: str):

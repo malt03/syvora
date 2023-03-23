@@ -1,5 +1,5 @@
 fn main() -> Int {
-    4 + 3 * 2
+    <print arg={4 + 3 * 2} />
     return 4 + 3 * 2
 }
 
