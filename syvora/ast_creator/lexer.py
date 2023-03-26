@@ -42,7 +42,7 @@ token_types = [
     (TokenType.WHITESPACE.name, r'[ \t]+'),
     (TokenType.NEWLINE.name, r'\n'),
     (TokenType.COMMENT.name, r'(?:\/\/[^\n]*|\/\*(?:.|\n)*?\*\/)'),
-    (TokenType.SYMBOL.name, r'[{}()\[\],.:;<>]|(?:->|/>)'),
+    (TokenType.SYMBOL.name, r'(?:->|/>|</)|[{}()\[\],.:;<>]'),
     (TokenType.OPERATOR.name,
      r'[+\-*/%^!=<>&|]|(?:\.\.<|==|!=|<=|>=|&&|\|\||\.\.\.)'),
 ]

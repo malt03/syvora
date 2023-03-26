@@ -10,13 +10,28 @@ class Module(ASTNode):
     def __init__(self, functions: List['FunctionDeclaration']):
         self.functions = functions
 
+    def __repr__(self):
+        return "\n".join(map(lambda f: str(f), self.functions))
+
 
 class FunctionDeclaration(ASTNode):
+    def low_level_func_name(self):
+        labels = '-'.join(map(lambda x: x.identifier.name, self.arguments))
+        return f"{self.name}_{labels}"
+
     def __init__(self, name: str, arguments: list['Argument'], return_type: Optional['AccessibleTypeExpression'], body: 'Block'):
         self.name = name
         self.arguments = arguments
         self.return_type = return_type
         self.body = body
+
+    def __repr__(self):
+        return f"""
+name: {self.name}
+arguments: {self.arguments}
+return type: {self.return_type}
+body: ({self.body})
+"""
 
 
 class Argument(ASTNode):
@@ -33,10 +48,21 @@ class IfExpression(ASTNode):
 
 
 class FunctionCallExpression(ASTNode):
-    def __init__(self, function_name: str, arguments: dict[str, ASTNode], children: Optional[list[ASTNode]] = None):
+    def low_level_func_name(self):
+        labels = '-'.join(map(lambda x: x[0], self.arguments))
+        return f"{self.function_name}_{labels}"
+
+    def __init__(self, function_name: str, arguments: list[tuple[str, ASTNode]], children: Optional[list[ASTNode]] = None):
         self.function_name = function_name
         self.arguments = arguments
         self.children = children
+
+    def __repr__(self):
+        return f"""
+function_name: {self.function_name}
+arguments: {self.arguments}
+children: {self.children}
+"""
 
 
 class BinaryExpression(ASTNode):
@@ -64,7 +90,10 @@ class Block(ASTNode):
         self.return_expression = return_expression
 
     def __repr__(self):
-        return f"({self.statements}{self.return_expression})"
+        return f"""
+statements: {self.statements}
+return_expression: {self.return_expression})
+"""
 
 
 class IdentifierExpression(ASTNode):

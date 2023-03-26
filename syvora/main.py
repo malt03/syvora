@@ -16,18 +16,22 @@ def main():
 
     ast = createAst(source_code, file_path)
 
+    # print(ast)
+
     llvm_ir_generator = LLVMIRGenerator()
     llvm_ir_generator.visit(ast)
 
-    llvm.initialize()
-    llvm.initialize_native_target()
-    llvm.initialize_native_asmprinter()
+    print(str(llvm_ir_generator.module))
 
-    target_machine = llvm.Target.from_default_triple().create_target_machine()
-    llvm_module = parse_assembly(str(llvm_ir_generator.module))
-    engine = llvm.create_mcjit_compiler(llvm_module, target_machine)
+    # llvm.initialize()
+    # llvm.initialize_native_target()
+    # llvm.initialize_native_asmprinter()
 
-    llvm_ir_generator.run_function(engine)
+    # target_machine = llvm.Target.from_default_triple().create_target_machine()
+    # llvm_module = parse_assembly(str(llvm_ir_generator.module))
+    # engine = llvm.create_mcjit_compiler(llvm_module, target_machine)
+
+    # llvm_ir_generator.run_function(engine)
 
 
 if __name__ == "__main__":

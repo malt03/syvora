@@ -44,7 +44,7 @@ class Parser:
         self.expect(TokenType.SYMBOL, "<")
         function_name = self.expect(TokenType.IDENTIFIER).value
 
-        arguments: dict[str, ASTNode] = {}
+        arguments: list[tuple[str, ASTNode]] = []
         while not self.match(TokenType.SYMBOL, "/>") and not self.match(TokenType.SYMBOL, ">"):
             arg_name = self.expect(TokenType.IDENTIFIER).value
             self.expect(TokenType.OPERATOR, "=")
@@ -57,8 +57,7 @@ class Parser:
             arg_value = self.expression()
             self.skip_newlines()
             self.expect(TokenType.SYMBOL, "}")
-
-            arguments[arg_name] = arg_value
+            arguments.append((arg_name, arg_value))
 
         children = None
         if self.match(TokenType.SYMBOL, "/>"):
