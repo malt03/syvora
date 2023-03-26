@@ -1,6 +1,6 @@
 import llvmlite.ir as ir
 import ctypes
-from syvora.ast_creator import LiteralExpression, BinaryExpression, FunctionDeclaration, Block, TokenType
+from syvora.ast_creator import *
 from .llvm_type_from_syvora_type import llvm_type_from_syvora_type
 from .symbol_table import SymbolTable
 
@@ -14,7 +14,7 @@ class LLVMIRGenerator:
     def add_print_function(self):
         printf_type = ir.FunctionType(ir.IntType(
             32), [ir.PointerType(ir.IntType(8))], var_arg=True)
-        printf = ir.Function(self.module, printf_type, 'printf')
+        printf = ir.Function(self.module, printf_type, name="printf")
 
         print_function_type = ir.FunctionType(ir.VoidType(), [ir.IntType(64)])
         print_function = ir.Function(self.module, print_function_type, 'print')
@@ -22,17 +22,41 @@ class LLVMIRGenerator:
         block = print_function.append_basic_block('entry')
         builder = ir.IRBuilder(block)
 
-        format_string = builder.global_const(
-            ir.ArrayType(ir.IntType(8), 4), b"%ld\n\00")
-        format_string_ptr = builder.gep(format_string, [ir.Constant(
-            ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
+        format_string = ir.Constant(ir.ArrayType(
+            ir.IntType(8), 4), bytearray("%d\n\00", "utf8"))
+        format_string_ptr = ir.GlobalVariable(
+            self.module, format_string.type, ".str")
+        format_string_ptr.linkage = 'private'
+        format_string_ptr.global_constant = True
+        format_string_ptr.initializer = format_string
 
         integer_value = print_function.args[0]
-        builder.call(printf, [format_string_ptr, integer_value])
+        builder.call(printf, [builder.bitcast(
+            format_string_ptr, ir.PointerType(ir.IntType(8))), integer_value])
 
         builder.ret_void()
 
         self.symbol_table.insert("print", print_function)
+
+    # def add_print_function(self):
+    #     printf_type = ir.FunctionType(ir.IntType(
+    #         32), [ir.PointerType(ir.IntType(8))], var_arg=True)
+    #     printf = ir.Function(self.module, printf_type, name="printf")
+
+    #     fmt_str = ir.Constant(ir.ArrayType(
+    #         ir.IntType(8), 4), bytearray("%d\n\00", "utf8"))
+    #     fmt_str_ptr = self.builder.alloca(fmt_str.type)
+    #     self.builder.store(fmt_str, fmt_str_ptr)
+    #     self.builder.call(printf, [self.builder.bitcast(
+    #         fmt_str_ptr, ir.PointerType(ir.IntType(8))), self.visit(node)])
+
+    #     ret_type = ir.VoidType()
+    #     arg_types = [ir.IntType(64)]
+    #     func_type = ir.FunctionType(ret_type, arg_types)
+    #     llvm_function = ir.Function(self.module, func_type, "print")
+
+    #     entry_block = llvm_function.append_basic_block('entry')
+    #     self.builder = ir.IRBuilder(entry_block)
 
     def visit(self, node):
         method_name = f"visit_{node.__class__.__name__}"
@@ -41,6 +65,30 @@ class LLVMIRGenerator:
 
     def generic_visit(self, node):
         raise Exception(f"No visit_{node.__class__.__name__} method")
+
+    def visit_Module(self, node: Module):
+        self.add_print_function()
+
+        for function in node.functions:
+            self.visit(function)
+
+    def visit_FunctionCallExpression(self, node: FunctionCallExpression):
+        function = self.module.get_global(node.function_name)
+
+        if function is None:
+            raise ValueError(f"Function '{node.function_name}' is not defined")
+
+        arg_values = []
+        for arg_name, arg_expr in node.arguments.items():
+            arg_value = self.visit(arg_expr)
+            arg_values.append(arg_value)
+
+        if node.children is not None:
+            for child_expr in node.children:
+                self.visit(child_expr)
+
+        result = self.builder.call(function, arg_values)
+        return result
 
     def visit_FunctionDeclaration(self, node: FunctionDeclaration):
         func_name = node.name

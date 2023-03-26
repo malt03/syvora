@@ -6,6 +6,11 @@ class ASTNode:
     pass
 
 
+class Module(ASTNode):
+    def __init__(self, functions: List['FunctionDeclaration']):
+        self.functions = functions
+
+
 class FunctionDeclaration(ASTNode):
     def __init__(self, name: str, arguments: list['Argument'], return_type: Optional['AccessibleTypeExpression'], body: 'Block'):
         self.name = name

@@ -17,8 +17,16 @@ class Parser:
             self.current_token = None
         return self.current_token
 
-    def parse(self):
-        return self.function_declaration()
+    def parse(self) -> Module:
+        functions: list[FunctionDeclaration] = []
+        while True:
+            self.skip_newlines()
+            if self.match(TokenType.KEYWORD, 'fn'):
+                functions.append(self.function_declaration())
+            else:
+                break
+            self.expect(TokenType.NEWLINE)
+        return Module(functions)
 
     def program(self):
         # Implement program rule
@@ -240,4 +248,4 @@ class Parser:
                 f"{' ' * (self.current_token.column - 1)}^")
 
     def match(self, token_type: TokenType, value: Optional[str] = None):
-        return self.current_token.type == token_type and (value is None or self.current_token.value == value)
+        return self.current_token != None and self.current_token.type == token_type and (value is None or self.current_token.value == value)

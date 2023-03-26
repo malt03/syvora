@@ -1,6 +1,11 @@
-fn main() -> Int {
-    <print arg={4 + 3 * 2} />
+fn hoge() -> Int {
     return 4 + 3 * 2
+}
+
+fn main() -> Int {
+    <print arg={<hoge />} />
+
+    return 0
 }
 
 /*
